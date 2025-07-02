@@ -33,7 +33,7 @@ async fn main() {
         key_cleanup_every_s: get_environment_variable_or_default("KEY_CLEANUP_EVERY_S", "0.0")
             .parse()
             .expect("Invalid KEY_CLEANUP_EVERY_S value"),
-        delete_unused_keys_after: get_environment_variable_or_default("DELETE_UNUSED_KEYS_AFTER", "invalid_default"),
+        delete_unused_keys_after: get_environment_variable_or_default("DELETE_UNUSED_KEYS_AFTER", "default_disabled"),
         max_value_length: get_environment_variable("MAX_VALUE_LENGTH")
             .parse()
             .expect("Invalid MAX_VALUE_LENGTH value"),
@@ -82,7 +82,7 @@ async fn main() {
     });
 
     // 0.0 indicates the feature should be disabled
-    if app_config.key_cleanup_every_s != 0.0 && app_config.delete_unused_keys_after != "invalid_default" {
+    if app_config.key_cleanup_every_s != 0.0 && app_config.delete_unused_keys_after != "default_disabled" {
         // Delete unused keys now, and on an interval
         delete_unused_keys(&pool, &app_config.delete_unused_keys_after).await;
         let coroutine_pool = pool.clone();
