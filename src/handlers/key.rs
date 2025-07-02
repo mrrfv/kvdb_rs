@@ -93,7 +93,6 @@ pub async fn get_key_handler(
 ) -> Result<Json<KeyGetResponse>, Response> {
     let pool = &app_state.pool;
 
-    println!("Fetching key: {}", input.name);
     let row = sqlx::query_as::<_, Key>(
         r#"
         SELECT name, roname, value, last_accessed FROM keys WHERE name = $1 OR roname = $1
@@ -158,9 +157,9 @@ pub async fn update_key_handler(
         r#"
         UPDATE keys SET value = $1, last_accessed = $2 WHERE name = $3
         "#    )
-    .bind(input.value)
+    .bind(&input.value)
     .bind(Utc::now())
-    .bind(input.name)
+    .bind(&input.name)
     .execute(pool)
     .await
     .map_err(|e| {
@@ -177,7 +176,10 @@ pub async fn update_key_handler(
     if result.rows_affected() == 0 {
         return Err((
             axum::http::StatusCode::NOT_FOUND,
-            "Key not found or read-only key used".to_string()
+            Json(ErrorResponse {
+                error: format!("Key '{}' not found or read-only key used", &input.name),
+                success: false,
+            })
         ).into_response());
     }
 
@@ -193,9 +195,9 @@ pub async fn delete_key_handler(
 ) -> Result<Json<KeyDeleteResponse>, Response> {
     let pool = &app_state.pool;
 
-    let _row = sqlx::query(
+    let row = sqlx::query(
         r#"
-        DELETE FROM keys WHERE name = $1 OR roname = $1
+        DELETE FROM keys WHERE name = $1
         "#)
     .bind(&input.name)
     .execute(pool)
@@ -209,6 +211,17 @@ pub async fn delete_key_handler(
             })
         ).into_response()
     })?;
+
+    // Check if any rows were affected
+    if row.rows_affected() == 0 {
+        return Err((
+            axum::http::StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: format!("Key '{}' not found or read-only key used", &input.name),
+                success: false,
+            })
+        ).into_response());
+    }
 
     Ok(Json(KeyDeleteResponse {
         success: true,
