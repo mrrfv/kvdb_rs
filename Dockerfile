@@ -16,7 +16,7 @@ COPY . .
 RUN cargo build --release
 
 # Use a minimal base image
-FROM debian:bullseye-slim
+FROM debian:12-slim
 
 WORKDIR /app
 
