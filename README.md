@@ -15,6 +15,10 @@ A Rust rewrite of [kvdb](https://github.com/mrrfv/kvdb), a simple PostgreSQL-bas
 **Differences from the original kvdb:**
 - No response speed throttling
 
+## API documentation
+
+Swagger is available at the `/` endpoint.
+
 ## Installation
 
 1. Download the latest release from the [releases page](https://github.com/mrrfv/kvdb_rs/releases), use the provided Dockerfile, or build from source like an ordinary Rust project.

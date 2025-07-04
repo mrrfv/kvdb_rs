@@ -11,6 +11,8 @@ use handlers::*;
 use sqlx::PgPool;
 use dotenv::dotenv;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() {
@@ -118,6 +120,26 @@ async fn main() {
         pool: pool.clone(),
     };
 
+    // Define OpenAPI documentation
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            new_key_handler,
+            get_key_handler,
+            update_key_handler,
+            delete_key_handler,
+        ),
+        components(
+            schemas(models::ErrorResponse)
+        ),
+        tags(
+            (name = "kvdb", description = "Postgres-based key value database server")
+        )
+    )]
+    struct ApiDoc;
+
+    let api = ApiDoc::openapi();
+
     let app = Router::new()
         .route("/key",
             post(new_key_handler)
@@ -130,7 +152,8 @@ async fn main() {
         .layer(GovernorLayer {
             config: rate_limit_config,
         })
-        .layer(cors);
+        .layer(cors)
+        .merge(SwaggerUi::new("/").url("/api-doc/openapi.json", api));
 
     // Print app configuration without sensitive data (like database URL)
     let mut sanitized_config = app_config.clone();

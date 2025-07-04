@@ -9,6 +9,16 @@ fn get_name_or_generate(input: &Option<String>) -> String {
 
 // Handler to create a new key
 #[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = "/key",
+    request_body = KeyCreateInput,
+    responses(
+        (status = OK, body = KeyCreateResponse),
+        (status = BAD_REQUEST, body = ErrorResponse),
+        (status = INTERNAL_SERVER_ERROR, body = ErrorResponse)
+    )
+)]
 pub async fn new_key_handler(
     State(app_state): State<AppState>,
     Json(input): Json<KeyCreateInput>,
@@ -87,6 +97,18 @@ pub async fn new_key_handler(
 }
 
 // Handler to get a key by name (using query parameter 'name')
+#[utoipa::path(
+    get,
+    path = "/key",
+    params(
+        ("name" = String, Query, description = "Key name or read-only key name")
+    ),
+    responses(
+        (status = OK, body = KeyGetResponse),
+        (status = NOT_FOUND, body = ErrorResponse),
+        (status = INTERNAL_SERVER_ERROR, body = ErrorResponse)
+    )
+)]
 pub async fn get_key_handler(
     State(app_state): State<AppState>,
     Query(input): Query<KeyGetInput>,
@@ -136,6 +158,17 @@ pub async fn get_key_handler(
 }
 
 // Handler to update a key's value by name. Accepts JSON input with 'name' and 'value'.
+#[utoipa::path(
+    put,
+    path = "/key",
+    request_body = KeyUpdateInput,
+    responses(
+        (status = OK, body = KeyUpdateResponse),
+        (status = BAD_REQUEST, body = ErrorResponse),
+        (status = NOT_FOUND, body = ErrorResponse),
+        (status = INTERNAL_SERVER_ERROR, body = ErrorResponse)
+    )
+)]
 pub async fn update_key_handler(
     State(app_state): State<AppState>,
     Json(input): Json<KeyUpdateInput>,
@@ -189,6 +222,18 @@ pub async fn update_key_handler(
 }
 
 // Handler to delete a key by name
+#[utoipa::path(
+    delete,
+    path = "/key",
+    params(
+        ("name" = String, Query, description = "Key name (not read-only)")
+    ),
+    responses(
+        (status = OK, body = KeyDeleteResponse),
+        (status = NOT_FOUND, body = ErrorResponse),
+        (status = INTERNAL_SERVER_ERROR, body = ErrorResponse)
+    )
+)]
 pub async fn delete_key_handler(
     State(app_state): State<AppState>,
     Query(input): Query<KeyDeleteInput>,
