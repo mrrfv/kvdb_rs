@@ -13,6 +13,9 @@ use dotenv::dotenv;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use tower_http::cors::{CorsLayer, Any};
+use axum::http::{HeaderValue};
+use tower_http::cors::{AllowOrigin};
 
 #[tokio::main]
 async fn main() {
@@ -104,15 +107,44 @@ async fn main() {
     }
 
     // Initialize CORS middleware
-    let cors = tower_http::cors::CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
-        .allow_origin(
-            app_config.cors_origins
-                .iter()
-                .map(|s| s.parse().unwrap())
-                .collect::<Vec<axum::http::HeaderValue>>()
-        )
-        .allow_headers([axum::http::header::CONTENT_TYPE]);
+    let cors = if app_config.cors_origins.iter().any(|o| o == "*") {
+        // Handle cases when the list of CORS origins contains a wildcard (*)
+        CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
+            .allow_origin(Any)
+            .allow_headers([axum::http::header::CONTENT_TYPE])
+    } else {
+        // All other cases, e.g. https://*.example.org, https://example.com
+
+        // Clone the list of allowed origins for use in the async predicate
+        let allowed_origins = app_config.cors_origins.clone();
+
+        CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
+            .allow_headers([axum::http::header::CONTENT_TYPE])
+            .allow_origin(AllowOrigin::async_predicate(
+            move |origin: HeaderValue, _request_parts| {
+                let allowed_origins = allowed_origins.clone();
+                async move {
+                // If "*" is present, allow all origins
+                if allowed_origins.iter().any(|o| o == "*") {
+                    return true;
+                }
+                // Check for exact match or wildcard match
+                allowed_origins.iter().any(|allowed| {
+                    if allowed.contains('*') {
+                        // Simple wildcard matching: "*.domain.com"
+                        let pattern = allowed.replace('.', r"\.").replace('*', ".*");
+                        let re = regex::Regex::new(&format!("^{}$", pattern)).unwrap();
+                        re.is_match(origin.to_str().unwrap_or(""))
+                    } else {
+                        allowed == origin.to_str().unwrap_or("")
+                    }
+                })
+                }
+            }
+            ))
+    };
 
     // Create the Axum application with the rate limiter
     let app_state = AppState {
