@@ -21,7 +21,7 @@ Swagger is available at the `/` endpoint.
 
 ## Installation
 
-1. Download the latest release from the [releases page](https://github.com/mrrfv/kvdb_rs/releases), use the provided Dockerfile, or build from source like an ordinary Rust project.
+1. Download the latest release from the [releases page](https://github.com/mrrfv/kvdb_rs/releases), use the provided Dockerfile, or build from source like an ordinary Rust project. A Docker image is also published at `docker.io/mrrfv/kvdb_rs:master`.
 
 2. Copy `.env.example` to `.env`
 
